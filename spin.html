@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fair Group Sorter</title>
+    <style>
+        /* --- CORE STYLES --- */
+        :root {
+            --primary: #4a90e2;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- LAYOUT --- */
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--card);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--primary);
+            text-align: center;
+        }
+
+        /* --- FORMS --- */
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background: #fafafa;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #7f8c8d;
+            color: white;
+            margin-top: 10px;
+        }
+
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        /* --- WHEEL UI --- */
+        .wheel-wrapper {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 20px auto;
+        }
+
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid #333;
+            z-index: 10;
+            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+        }
+
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 8px solid white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+            /* Ease-out for spin effect */
+        }
+
+        /* --- STATS & RESULTS --- */
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 12px;
+            border: 1px solid #eee;
+        }
+
+        .status-card strong {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .result-box {
+            text-align: center;
+            margin-top: 15px;
+            min-height: 40px;
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        /* --- TABLE --- */
+        .table-container {
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        th {
+            background: #f8f9fa;
+            position: sticky;
+            top: 0;
+        }
+
+        /* --- LIVE RESULTS --- */
+        .live-results {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+
+        .live-results h3 {
+            font-size: 16px;
+            margin: 0 0 15px 0;
+            color: var(--text);
+            text-align: center;
+        }
+
+        .results-groups {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .group-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px;
+            border: 2px solid #eee;
+        }
+
+        .group-box-header {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid;
+            text-align: center;
+        }
+
+        .group-box-names {
+            font-size: 12px;
+            line-height: 1.6;
+            max-height: 120px;
+            /* Shows approximately 5 names */
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 5px;
+        }
+
+        /* Custom scrollbar styling */
+        .group-box-names::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .group-box-names::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .group-box-names::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        .group-box-names::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .group-box-names div {
+            padding: 3px 0;
+            color: #555;
+        }
+
+        .group-box-empty {
+            font-size: 11px;
+            color: #999;
+            font-style: italic;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div id="setupScreen" class="screen active">
+            <h2>⚙️ Setup Event</h2>
+
+            <label>Number of Groups</label>
+            <select id="groupCount" onchange="updateGroupInputs()">
+                <option value="2">2 Groups</option>
+                <option value="3" selected>3 Groups</option>
+                <option value="4">4 Groups</option>
+                <option value="5">5 Groups</option>
+            </select>
+
+            <div id="groupInputsContainer"></div>
+
+            <label>Paste Names (List)</label>
+            <textarea id="nameInput" rows="8" placeholder="Paste list of names here..."></textarea>
+
+            <button class="btn btn-primary" onclick="initApp()">Start Event</button>
+        </div>
+
+        <div id="gameScreen" class="screen">
+            <div class="status-grid" id="statusGrid"></div>
+
+            <label>Select Person to Spin:</label>
+            <select id="playerSelect"></select>
+
+            <div class="wheel-wrapper">
+                <div class="pointer"></div>
+                <div class="wheel" id="wheel"></div>
+            </div>
+
+            <div class="result-box" id="resultDisplay"></div>
+
+            <button id="spinBtn" class="btn btn-primary" onclick="spin()">SPIN WHEEL</button>
+            <button class="btn btn-secondary" onclick="toResults()">View List / Export</button>
+
+            <!-- Live Results Section -->
+            <div class="live-results" id="liveResults">
+                <h3>📊 Assigned Players</h3>
+                <div class="results-groups" id="resultsGroups"></div>
+            </div>
+        </div>
+
+        <div id="resultScreen" class="screen">
+            <h2>📋 Final List</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Group</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultBody"></tbody>
+                </table>
+            </div>
+
+            <button class="btn btn-success" onclick="exportToCSV()">Download Excel / CSV</button>
+            <button class="btn btn-secondary" onclick="toGame()">Back to Wheel</button>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBAL STATE ---
+        const COLOR_PALETTE = {
+            'Red': '#DC143C',
+            'Orange': '#FF8C00',
+            'Yellow': '#FFD700',
+            'Green': '#32CD32',
+            'Blue': '#1E90FF',
+            'Purple': '#9370DB',
+            'Pink': '#FF69B4',
+            'White': '#F5F5F5',
+            'Gray': '#808080',
+            'Brown': '#8B4513',
+            'Black': '#2C2C2C',
+            'Silver': '#C0C0C0'
+        };
+
+        let config = {
+            groupCount: 3,
+            colors: [], // User defined names
+            visuals: [], // Selected color hex codes
+            maxPerGroup: 0
+        };
+        let players = []; // { name, groupIndex or null }
+        let currentRotation = 0;
+        let isSpinning = false;
+
+        // --- 0. SETUP UI GENERATION ---
+        function updateGroupInputs() {
+            const count = parseInt(document.getElementById('groupCount').value);
+            const container = document.getElementById('groupInputsContainer');
+            container.innerHTML = '';
+
+            for (let i = 0; i < count; i++) {
+                const groupDiv = document.createElement('div');
+                groupDiv.style.marginTop = '15px';
+
+                // Group name input
+                const nameLabel = document.createElement('label');
+                nameLabel.textContent = `Group ${i + 1} Name`;
+                groupDiv.appendChild(nameLabel);
+
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.id = `groupName${i}`;
+                nameInput.value = `Group ${i + 1}`;
+                groupDiv.appendChild(nameInput);
+
+                // Color selection
+                const colorLabel = document.createElement('label');
+                colorLabel.textContent = `Group ${i + 1} Color`;
+                colorLabel.style.marginTop = '8px';
+                groupDiv.appendChild(colorLabel);
+
+                const colorSelect = document.createElement('select');
+                colorSelect.id = `groupColor${i}`;
+                colorSelect.onchange = () => updateColorOptions();
+
+                // Add color options
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '-- Select Color --';
+                colorSelect.appendChild(defaultOption);
+
+                Object.keys(COLOR_PALETTE).forEach(colorName => {
+                    const option = document.createElement('option');
+                    option.value = colorName;
+                    option.textContent = colorName;
+                    option.style.color = COLOR_PALETTE[colorName];
+                    option.style.fontWeight = 'bold';
+                    colorSelect.appendChild(option);
+                });
+
+                groupDiv.appendChild(colorSelect);
+                container.appendChild(groupDiv);
+            }
+
+            // Set default colors
+            const defaultColors = ['Red', 'Blue', 'Yellow', 'Green', 'Purple'];
+            for (let i = 0; i < count && i < defaultColors.length; i++) {
+                const select = document.getElementById(`groupColor${i}`);
+                if (select) select.value = defaultColors[i];
+            }
+
+            updateColorOptions();
+        }
+
+        function updateColorOptions() {
+            const count = parseInt(document.getElementById('groupCount').value);
+            const selectedColors = [];
+
+            // Collect all selected colors
+            for (let i = 0; i < count; i++) {
+                const select = document.getElementById(`groupColor${i}`);
+                if (select && select.value) {
+                    selectedColors.push(select.value);
+                }
+            }
+
+            // Update each dropdown to hide already selected colors
+            for (let i = 0; i < count; i++) {
+                const select = document.getElementById(`groupColor${i}`);
+                if (!select) continue;
+
+                const currentValue = select.value;
+
+                // Rebuild options
+                Array.from(select.options).forEach((option, idx) => {
+                    if (idx === 0) return; // Skip "-- Select Color --"
+
+                    const colorName = option.value;
+                    // Hide if selected elsewhere (but not in current dropdown)
+                    if (selectedColors.includes(colorName) && colorName !== currentValue) {
+                        option.style.display = 'none';
+                        option.disabled = true;
+                    } else {
+                        option.style.display = '';
+                        option.disabled = false;
+                    }
+                });
+            }
+        }
+
+        // Initialize on page load
+        window.onload = () => {
+            updateGroupInputs();
+        };
+
+        // --- 1. INITIALIZATION ---
+        function initApp() {
+            const namesTxt = document.getElementById('nameInput').value.trim();
+            if (!namesTxt) return alert("Please enter at least one name.");
+
+            // 1. Get Group Count
+            config.groupCount = parseInt(document.getElementById('groupCount').value);
+
+            // 2. Validate and Set Group Names and Colors
+            config.colors = [];
+            config.visuals = [];
+
+            for (let i = 0; i < config.groupCount; i++) {
+                const nameInput = document.getElementById(`groupName${i}`);
+                const colorSelect = document.getElementById(`groupColor${i}`);
+
+                if (!colorSelect || !colorSelect.value) {
+                    return alert(`Please select a color for Group ${i + 1}`);
+                }
+
+                config.colors.push(nameInput.value || `Group ${i + 1}`);
+                config.visuals.push(COLOR_PALETTE[colorSelect.value]);
+            }
+
+            // 3. Process Players
+            players = namesTxt.split('\n')
+                .map(n => n.trim())
+                .filter(n => n)
+                .map(n => ({ name: n, groupIndex: null }));
+
+            if (players.length === 0) return alert("No valid names found.");
+
+            // 4. Set Balancing Limit (Total / groupCount, rounded up)
+            config.maxPerGroup = Math.ceil(players.length / config.groupCount);
+
+            // 5. Render Wheel Visuals
+            const w = document.getElementById('wheel');
+            const segmentAngle = 360 / config.groupCount;
+
+            // Build conic gradient dynamically
+            let gradientParts = [];
+            for (let i = 0; i < config.groupCount; i++) {
+                const startAngle = i * segmentAngle;
+                const endAngle = (i + 1) * segmentAngle;
+                gradientParts.push(`${config.visuals[i]} ${startAngle}deg ${endAngle}deg`);
+            }
+
+            w.style.background = `conic-gradient(${gradientParts.join(', ')})`;
+
+            updateUI();
+            switchScreen('gameScreen');
+        }
+
+        // --- 2. GAME LOGIC ---
+        function spin() {
+            if (isSpinning) return;
+
+            const select = document.getElementById('playerSelect');
+            const playerName = select.value;
+            if (!playerName) return alert("Please select a person.");
+
+            isSpinning = true;
+            document.getElementById('spinBtn').disabled = true;
+            document.getElementById('resultDisplay').innerText = "...";
+
+            // A. DETERMINE WINNING GROUP (SMART BALANCING)
+            // Count current assignments
+            const counts = new Array(config.groupCount).fill(0);
+            players.forEach(p => {
+                if (p.groupIndex !== null) counts[p.groupIndex]++;
+            });
+
+            // Find available groups (not full)
+            let available = [];
+            for (let i = 0; i < config.groupCount; i++) {
+                if (counts[i] < config.maxPerGroup) available.push(i);
+            }
+
+            // Failsafe
+            if (available.length === 0) {
+                available = Array.from({ length: config.groupCount }, (_, i) => i);
+            }
+
+            // Pick Random Winner from Available
+            const winnerIdx = available[Math.floor(Math.random() * available.length)];
+
+            // B. CALCULATE ROTATION
+            // Calculate segment angle and center for each group
+            const segmentAngle = 360 / config.groupCount;
+
+            // For each segment, calculate its center angle
+            const segmentCenter = (winnerIdx * segmentAngle) + (segmentAngle / 2);
+
+            // The pointer is at top (0 degrees), so we need to rotate the wheel
+            // so that the winning segment's center aligns with the pointer
+            // Target rotation = 360 - segmentCenter (to bring it to top)
+            let baseTarget = 360 - segmentCenter;
+
+            // Normalize to 0-360
+            while (baseTarget < 0) baseTarget += 360;
+            while (baseTarget >= 360) baseTarget -= 360;
+
+            // Add randomness within the segment (safe zone is half the segment angle minus some margin)
+            const safeZone = (segmentAngle / 2) - 10;
+            const randomOffset = Math.floor(Math.random() * (safeZone * 2)) - safeZone;
+            const finalAngle = baseTarget + randomOffset;
+
+            // Calculate full spins (5 spins = 1800 deg)
+            const extraSpins = 1800;
+
+            // We want to add to current rotation so it spins forward
+            // Current visual rotation mod 360
+            const currentMod = currentRotation % 360;
+
+            // Calculate distance needed to reach finalAngle
+            const distance = (extraSpins + finalAngle) - currentMod;
+
+            currentRotation += distance;
+
+            // C. ANIMATE
+            const wheel = document.getElementById('wheel');
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            // D. FINALIZE (After 4 seconds)
+            setTimeout(() => {
+                // Save Result
+                const pIndex = players.findIndex(p => p.name === playerName);
+                players[pIndex].groupIndex = winnerIdx;
+
+                // Update UI
+                const groupName = config.colors[winnerIdx];
+                document.getElementById('resultDisplay').innerText = `Result: ${groupName}!`;
+                document.getElementById('resultDisplay').style.color = config.visuals[winnerIdx];
+
+                isSpinning = false;
+                document.getElementById('spinBtn').disabled = false;
+
+                updateUI();
+            }, 4000);
+        }
+
+        // --- 3. UI HELPERS ---
+        function updateUI() {
+            // Update Dropdown
+            const select = document.getElementById('playerSelect');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">-- Choose Name --</option>';
+
+            const unassigned = players.filter(p => p.groupIndex === null);
+
+            if (unassigned.length === 0) {
+                select.innerHTML = '<option>All Sorted!</option>';
+                document.getElementById('spinBtn').disabled = true;
+            } else {
+                unassigned.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.name;
+                    opt.innerText = p.name;
+                    select.appendChild(opt);
+                });
+            }
+
+            // Update Stats Grid
+            const grid = document.getElementById('statusGrid');
+            const counts = new Array(config.groupCount).fill(0);
+            players.forEach(p => { if (p.groupIndex !== null) counts[p.groupIndex]++; });
+
+            grid.innerHTML = config.colors.map((name, i) => `
+                <div class="status-card" style="border-top: 3px solid ${config.visuals[i]}">
+                    <strong>${name}</strong>
+                    ${counts[i]} / ${config.maxPerGroup}
+                </div>
+            `).join('');
+
+            // Update Results Table
+            const tbody = document.getElementById('resultBody');
+            tbody.innerHTML = '';
+            const sorted = players.filter(p => p.groupIndex !== null);
+            sorted.forEach(p => {
+                tbody.innerHTML += `<tr>
+                    <td>${p.name}</td>
+                    <td style="color:${config.visuals[p.groupIndex]}; font-weight:bold;">
+                        ${config.colors[p.groupIndex]}
+                    </td>
+                </tr>`;
+            });
+
+            // Update Live Results on Game Screen
+            const resultsGroups = document.getElementById('resultsGroups');
+            if (resultsGroups) {
+                resultsGroups.innerHTML = '';
+
+                // Create a box for each group
+                for (let i = 0; i < config.groupCount; i++) {
+                    const groupPlayers = players.filter(p => p.groupIndex === i);
+
+                    const groupBox = document.createElement('div');
+                    groupBox.className = 'group-box';
+                    groupBox.style.borderColor = config.visuals[i];
+
+                    // Header with group name
+                    const header = document.createElement('div');
+                    header.className = 'group-box-header';
+                    header.style.borderColor = config.visuals[i];
+                    header.style.color = config.visuals[i];
+                    header.textContent = config.colors[i];
+                    groupBox.appendChild(header);
+
+                    // Names list
+                    const namesDiv = document.createElement('div');
+                    namesDiv.className = 'group-box-names';
+
+                    if (groupPlayers.length === 0) {
+                        namesDiv.innerHTML = '<div class="group-box-empty">No assignments yet</div>';
+                    } else {
+                        groupPlayers.forEach(p => {
+                            const nameDiv = document.createElement('div');
+                            nameDiv.textContent = `• ${p.name}`;
+                            namesDiv.appendChild(nameDiv);
+                        });
+                    }
+
+                    groupBox.appendChild(namesDiv);
+                    resultsGroups.appendChild(groupBox);
+                }
+            }
+        }
+
+        // --- 4. EXPORT FUNCTION ---
+        function exportToCSV() {
+            // Build CSV content with UTF-8 BOM for Thai language support
+            const BOM = '\uFEFF';
+            let csvContent = "Name,Group,ColorCode\n";
+
+            // Rows
+            players.forEach(p => {
+                if (p.groupIndex !== null) {
+                    const groupName = config.colors[p.groupIndex];
+                    const colorName = Object.keys(COLOR_PALETTE).find(key => COLOR_PALETTE[key] === config.visuals[p.groupIndex]);
+
+                    // Only escape if there are commas or quotes in the data
+                    const name = p.name.includes(',') || p.name.includes('"') ? `"${p.name.replace(/"/g, '""')}"` : p.name;
+                    const group = groupName.includes(',') || groupName.includes('"') ? `"${groupName.replace(/"/g, '""')}"` : groupName;
+                    csvContent += `${name},${group},${colorName}\n`;
+                }
+            });
+
+            // Create blob with UTF-8 encoding
+            const csvWithBOM = BOM + csvContent;
+
+            // Create download link with data URI (more reliable for filename preservation)
+            const link = document.createElement("a");
+            link.setAttribute("href", "data:text/csv;charset=utf-8," + encodeURIComponent(csvWithBOM));
+            link.setAttribute("download", "group_assignments.csv");
+            link.style.display = 'none';
+
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            setTimeout(() => {
+                document.body.removeChild(link);
+            }, 100);
+        }
+
+        // --- NAVIGATION ---
+        function switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+        function toResults() { switchScreen('resultScreen'); }
+        function toGame() { switchScreen('gameScreen'); }
+
+    </script>
+</body>
+
+</html>
