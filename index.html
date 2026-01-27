@@ -543,7 +543,7 @@
 
             const select = document.getElementById('playerSelect');
             const playerName = select.value;
-            if (!playerName) return alert("Please select a person.");
+            if (!playerName) return alert("เลือกคนก่อนสินะจ๊ะ.");
 
             isSpinning = true;
             document.getElementById('spinBtn').disabled = true;
@@ -615,7 +615,7 @@
 
                 // Update UI
                 const groupName = config.colors[winnerIdx];
-                document.getElementById('resultDisplay').innerText = `Result: ${groupName}!`;
+                document.getElementById('resultDisplay').innerText = `อยู่กลุ่มสี: ${groupName}!`;
                 document.getElementById('resultDisplay').style.color = config.visuals[winnerIdx];
 
                 isSpinning = false;
