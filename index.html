@@ -296,7 +296,7 @@
 
     <div class="container">
         <div id="setupScreen" class="screen active">
-            <h2>⚙️ จับกลุ่มตามสี</h2>
+            <h2>⚙️ Setup Event</h2>
 
             <label>Number of Groups</label>
             <select id="groupCount" onchange="updateGroupInputs()">
@@ -359,18 +359,13 @@
     <script>
         // --- GLOBAL STATE ---
         const COLOR_PALETTE = {
-            'Red': '#DC143C',
-            'Orange': '#FF8C00',
-            'Yellow': '#FFD700',
-            'Green': '#32CD32',
-            'Blue': '#1E90FF',
-            'Purple': '#9370DB',
-            'Pink': '#FF69B4',
-            'White': '#F5F5F5',
-            'Gray': '#808080',
-            'Brown': '#8B4513',
-            'Black': '#2C2C2C',
-            'Silver': '#C0C0C0'
+            'สีแดง': '#DC143C',
+            'สีส้ม': '#FF8C00',
+            'สีเหลือง': '#FFD700',
+            'สีเขียว': '#32CD32',
+            'สีฟ้า': '#1E90FF',
+            'สีม่วง': '#9370DB',
+            'สีชมพู': '#FF69B4',
         };
 
         let config = {
@@ -412,7 +407,17 @@
 
                 const colorSelect = document.createElement('select');
                 colorSelect.id = `groupColor${i}`;
-                colorSelect.onchange = () => updateColorOptions();
+                colorSelect.onchange = function () {
+                    updateColorOptions();
+                    // Auto-populate group name with color name
+                    const selectedColor = this.value;
+                    if (selectedColor) {
+                        const nameInput = document.getElementById(`groupName${i}`);
+                        if (nameInput) {
+                            nameInput.value = selectedColor;
+                        }
+                    }
+                };
 
                 // Add color options
                 const defaultOption = document.createElement('option');
@@ -434,7 +439,7 @@
             }
 
             // Set default colors
-            const defaultColors = ['Red', 'Blue', 'Yellow', 'Green', 'Purple'];
+            const defaultColors = ['สีแดง', 'สีฟ้า', 'สีเหลือง', 'สีเขียว'];
             for (let i = 0; i < count && i < defaultColors.length; i++) {
                 const select = document.getElementById(`groupColor${i}`);
                 if (select) select.value = defaultColors[i];
@@ -543,7 +548,7 @@
 
             const select = document.getElementById('playerSelect');
             const playerName = select.value;
-            if (!playerName) return alert("เลือกคนก่อนสินะจ๊ะ.");
+            if (!playerName) return alert("Please select a person.");
 
             isSpinning = true;
             document.getElementById('spinBtn').disabled = true;
@@ -615,7 +620,7 @@
 
                 // Update UI
                 const groupName = config.colors[winnerIdx];
-                document.getElementById('resultDisplay').innerText = `อยู่กลุ่มสี: ${groupName}!`;
+                document.getElementById('resultDisplay').innerText = `Result: ${groupName}!`;
                 document.getElementById('resultDisplay').style.color = config.visuals[winnerIdx];
 
                 isSpinning = false;
